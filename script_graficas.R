@@ -8,6 +8,7 @@ options(scipen = 999, digits = 2)
 # IMPORTAR DATA
 casen <- read.delim("casen2017_set.csv", sep = ";")
 
+
 # ASIGNAR NOMBRE MÁS CORTO A LAS REGIONES
 reg_short <- c("Tarapaca", "Antofagasta","Atacama","Coquimbo", "Valparaiso",
                "Ohiggins", "Maule", "Biobio", "Ñuble", "Araucania", "Los lagos",
@@ -29,7 +30,7 @@ region <- casen_mayores %>% group_by(regs) %>%
   summarize(frec = n())
 
 # desordenado
-ggplot(region, aes(regs, frec)) +
+ggplot(region, aes(x= regs, y= frec)) +
   geom_bar(stat = "identity") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
@@ -44,15 +45,16 @@ ggplot(region, aes(reorder(regs, frec), frec)) +
 
 # variable cuantitativa, histograma, forma horrible
 ggplot(casen_mayores, aes(ingreso)) +
-  geom_histogram(binwidth = 10000) +
+  geom_histogram(binwidth = 1000000) +
   theme_bw() +
   labs(x="Ingresos", y="Frecuencia")
 
 # forma más linda
-ggplot(casen_mayores, aes(log(ingreso) )) +
+ggplot(casen_mayores, aes(log(ingreso))) +
   geom_histogram() +
   theme_bw() +
-  labs(x="Ingresos (escala logaritmica)", y="Frecuencia")
+  labs(x="Ingresos (escala logaritmica)", 
+       y="Frecuencia")
 
 # forma como densidad, recomendado para variables contínuas
 ggplot(casen_mayores, aes(log(ingreso) )) +
@@ -64,7 +66,8 @@ ggplot(casen_mayores, aes(log(ingreso) )) +
 # ============GRAFICAR DOS VARIABLES CATEGÓRICAS =======
 
 # tabla de contingencia
-t(prop.table(table(casen_mayores$qaut, casen_mayores$regs), margin = 2) * 100)
+t(prop.table(table(casen_mayores$qaut, 
+                   casen_mayores$regs), margin = 2) * 100)
 
 # generando tabla para plotear
 quint_by_regs <- casen_mayores %>%
@@ -111,7 +114,7 @@ ggplot(na.omit(casen_mayores), aes(esc, log(ingreso))) +
 ggplot(na.omit(casen_mayores), aes(esc, log(ingreso))) +
   geom_point(aes(size=numper, color=sexo), alpha = 1/3) +
   theme_bw() +
-  geom_smooth(method = "gam") +
+  geom_smooth() +
   labs(x="Escolaridad en años", y="Ingresos (escala logaritmica)",
        size="Tamaño de familia", color="Sexo")
   
@@ -187,6 +190,13 @@ ggplot(reg_sex_incom, aes(mean_income, regs)) +
                                   max(reg_sex_incom$mean_income),50000),
                      labels = dollar_format(prefix = "$") ) +
   labs(x="Media ingresos", y="", color="Sexo")
+
+
+
+
+
+
+
 
 
 
