@@ -192,19 +192,40 @@ ggplot(reg_sex_incom, aes(mean_income, regs)) +
   labs(x="Media ingresos", y="", color="Sexo")
 
 
+# =============== Sobre desigualdad inter etaria en Chile ===========
+casen_mayores$yautcor <- as.numeric(as.character(casen_mayores$yautcor))
+
+# ploteo box plot por edad como factor
+ggplot(casen_mayores, aes(as.factor(edad), log(yautcor), 
+                          fill=as.factor(edad))) +
+  geom_boxplot() +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, size = 12),
+        axis.text.y = element_text(size = 12),
+        axis.title.x = element_text(size = 20),
+        axis.title.y = element_text(size = 20),
+        legend.position = "none") +
+  labs(x="Edad", y= "Log ingreso autónomo corregido")
+
+# creo un subset con quantiles 20-80 de ingreso
+group_edad <- casen_mayores %>% group_by(edad) %>%
+  summarize(q20 = quantile(yautcor, .2, na.rm = T),
+            q80 = quantile(yautcor, .8, na.rm = T))
+
+# calculo el diferencial entre éstos
+group_edad$dif <- group_edad$q80 - group_edad$q20
+
+# ploteo diferencial
+ggplot(group_edad, aes(as.factor(edad), dif, fill=as.factor(edad))) +
+  geom_bar(stat = "identity") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, size = 12),
+        axis.text.y = element_text(size = 12),
+        axis.title.x = element_text(size = 20),
+        axis.title.y = element_text(size = 20),
+        legend.position = "none") +
+  geom_hline(yintercept = 242879.2, colour = "red",
+             size = 1) +
+  labs(x="Edad", y= "Diferencia ingreso aut. corregido q_20 y q_80")
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-ggplot(casen_mayores, aes())
