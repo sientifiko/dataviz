@@ -268,13 +268,23 @@ ggplot(gini_edad, aes(as.factor(edad), gini, fill = as.factor(edad))) +
 # importar set histórico del gini
 gini_data <- read.delim("gini_data.csv", sep = "\t")
 
-# plotear desigualdad
+# plotear desigualdad con intérvalo natural
 ggplot(gini_data, aes(anno, gini)) +
   geom_line() +
   theme_bw() +
   scale_y_continuous(limits = c(0,100)) +
   theme(axis.text.x = element_text(angle = 90)) +
-  labs(x = "Edad", y = "Índice Gini nacional")
+  labs(x = "Edad", y = "Índice Gini nacional", 
+       title = "Sin eje Y manipulado")
+
+# plotear desigualdad sin intérvalo natural
+ggplot(gini_data, aes(anno, gini)) +
+  geom_line() +
+  theme_bw() +
+  # scale_y_continuous(limits = c(0,100)) +
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(x = "Edad", y = "Índice Gini nacional",
+       title = "Cón eje Y manipulado")
 
 
 
