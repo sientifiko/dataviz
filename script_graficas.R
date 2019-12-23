@@ -1,7 +1,7 @@
 
-# lapply(c("ggplot2", "tidyverse", "ggthemes"), install.packages)
+# lapply(c("tidyverse", "ggthemes"), install.packages)
 
-library(ggplot2); library(tidyverse); library(ggthemes); library(scales)
+library(tidyverse); library(ggthemes); library(scales)
 
 options(scipen = 999, digits = 2)
 
@@ -207,3 +207,4 @@ ggplot(reg_sex_incom, aes(mean_income, regs)) +
 
 
 
+ggplot(casen_mayores, aes())
