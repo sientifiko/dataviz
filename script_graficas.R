@@ -287,7 +287,76 @@ ggplot(gini_data, aes(anno, gini)) +
        title = "Cón eje Y manipulado")
 
 
+# ====================== VISUALIZAR TEXTO ================
 
+# Nube de palabras (el código es largo, pero es porque está desarmado para que 
+# lo entiendan, cuando sean más secos pueden meterlo en una pura función)
+
+library(XML);library(RCurl)
+library(tm)
+library(wordcloud)
+
+texto <-  "texto_ejemplo_manifiestocomunista.txt" # poner aca el path o url del texto, debe ser un txt
+
+txt <- readLines(texto ,encoding="UTF-8")
+txt = iconv(txt, to="ASCII//TRANSLIT")
+
+# construye un corpus
+corpus <- Corpus(VectorSource(txt))
+
+# lleva a minisculas
+d  <- tm_map(corpus, tolower)
+
+# quita espacios en blanco
+d  <- tm_map(d, stripWhitespace)
+
+# remueve la puntuaci?n
+d <- tm_map(d, removePunctuation)
+
+# remove numbers
+d <- tm_map(d, removeNumbers)
+
+# remove certain words
+vector <- c("ano", "columna", "anos", "refiere", "via","torno","nota",
+            "forma","formas","area", "mas", "vez") # palabras a remover de manera personalizada
+d <- tm_map(d, removeWords, vector)
+
+
+# carga mi archivo de palabras vacias personalizada y lo convierte a ASCII
+sw <- readLines("http://www.webmining.cl/wp-content/uploads/2011/03/stopwords.es.txt", encoding="UTF-8")
+sw = iconv(sw, to="ASCII//TRANSLIT")
+
+# remueve palabras vacias genericas
+d <- tm_map(d, removeWords, stopwords("spanish"))
+
+# remueve palabras vac?as personalizadas
+d <- tm_map(d, removeWords, sw)
+
+# crea matriz de terminos
+tdm <- TermDocumentMatrix(d)
+
+# la convierte en objeto matriz
+m <- as.matrix(tdm)
+
+# la ordena por frecuencia
+v <- sort(rowSums(m),decreasing=TRUE)
+
+# la convierte a data frame
+df <- data.frame(word = names(v),freq=v)
+
+# par(mfrow = c(2,2)) -- > esta es otra forma de ajustar resolucion
+# correr este comando para ajustar la resolucion
+# a la hora de plotear si queda feo
+# par(mar = rep(1,1))
+
+set.seed(1234) # para replicabilidad de la gráfica
+wordcloud(df$word, df$freq, min.freq= 5,
+          #  max.words = x, 
+          random.order = F,
+          rot.per = 0.2,
+          #    fixed.asp = T ,
+          #   use.r.layout = T,
+          colors = brewer.pal(8, "Dark2"))
 
 
 
