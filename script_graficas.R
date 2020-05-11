@@ -359,6 +359,83 @@ wordcloud(df$word, df$freq, min.freq= 5,
           colors = brewer.pal(8, "Dark2"))
 
 
+# ==================== HAGAMOS GIFS!!!! ===============================
+
+library(gganimate); library(transformr); library(gifski)
+
+# vamos a ver si existe alguna relacion entre la complejidad económica de un país
+# y su nivel de democracia. Para ello usaremos el índice de complejidad económica (ECI) del MIT
+# que mide que tan intensiva en conocimiento es la industria de un país
+# https://oec.world/en/rankings/country/eci/
+
+# La hipótesis detrás?? Eso se los dejo a ustedes, yo solo estoy aquí para enseñarles
+# a hacer visualizaciones bonitas
+
+# para democracia usaremos el dataset del V-Dem
+# partamos con este dataset, y saquemos los datos que nos interesan, 
+# en este caso sacaremos el índice de democracia igualitaria, porque es
+# intersante, pueden ver el codebook para más detalles de qué mide el índice
+
+vdem <- readRDS("V-Dem-CY-Full+Others-v10.rds")
+
+vdem2 <- vdem %>% select(country_name, country_text_id, year,
+                         v2x_egaldem)
+
+# luego importaremos el ECI
+eci <- read.delim("eci_country_rankings.csv", sep = ";")
+
+# vamos a hacer algunos arreglos, como pasar textos a mayúsculas, y construir
+# una llave foránea para juntar distintos datasets
+
+eci$pais_iso <- toupper(eci$pais_iso) # convierte en mayúsculas
+
+# construimos la llave foránea juntando el año y el nombre corto de cada país
+# en cada dataset
+
+eci$llave <- paste0(eci$Year, eci$pais_iso)
+vdem2$llave <- paste0(vdem2$year, vdem2$country_text_id)
+
+# juntamos los dataset aplicando el homólogo de SQL en R, que nos proporciona
+# tiydiverse, es una maravilla si me lo preguntan
+
+data <- vdem2 %>% inner_join(eci, by = "llave")
+
+# me molesta como están los continentes, así que los pasaré a nombre completo
+data$continente_largo <- case_when(
+  data$continente == "na" ~ "Norte America",
+  data$continente == "af" ~ "Africa",
+  data$continente == "as" ~ "Asia",
+  data$continente == "eu" ~ "Europa",
+  data$continente == "oc" ~ "Oceania",
+  data$continente == "sa" ~ "América del sur"
+)
+
+# con esto estamos listos para nuestra gráfica. Para ello primero le damos forma en
+# ggplot
+plot <- ggplot(data, aes(ECI, v2x_egaldem, colour = continente_largo)) +
+  geom_text(aes(label = pais_iso)) +
+  theme_light() +
+  scale_y_continuous(limits = c(0,1)) +
+  geom_vline(xintercept = 0) +
+  geom_hline(yintercept = .5) +
+  facet_wrap(.~continente_largo, ncol = 3, nrow = 2) +
+  theme(legend.position = "none",
+        axis.title.x = element_text(size = 20, face = "bold"),
+        axis.title.y = element_text(size = 18, face = "bold"),
+        strip.text = element_text(size = 20),
+        title = element_text(face = "bold", size = 30),
+        plot.title = element_text(hjust = 0.5)) +
+  labs(x = "Indice de Complejidad Economica",
+       y="Indice de Democracia Igualitaria", 
+       colour = "Continente",
+       title = "Año: {frame_time}") +
+  transition_time(as.integer(year)) 
+
+# Por último con estas sentencias damos forma al gif y lo exportamos
+# Noten que pueden editar duración del gif, su tamaño, entre otros parámetros
+animate(plot,  duration = 30, width = 900)
+anim_save("eci_vs_edi.gif")
+
 
 
 
