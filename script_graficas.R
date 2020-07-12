@@ -398,7 +398,7 @@ vdem2$llave <- paste0(vdem2$year, vdem2$country_text_id)
 # juntamos los dataset aplicando el homólogo de SQL en R, que nos proporciona
 # tiydiverse, es una maravilla si me lo preguntan
 
-data <- vdem2 %>% inner_join(eci, by = "llave")
+data <- vdem2 %>% inner_join(select(eci, ECI, continente, llave), by = "llave")
 
 # me molesta como están los continentes, así que los pasaré a nombre completo
 data$continente_largo <- case_when(
@@ -413,7 +413,7 @@ data$continente_largo <- case_when(
 # con esto estamos listos para nuestra gráfica. Para ello primero le damos forma en
 # ggplot
 plot <- ggplot(data, aes(ECI, v2x_egaldem, colour = continente_largo)) +
-  geom_text(aes(label = pais_iso)) +
+  geom_text(aes(label = country_text_id)) +
   theme_light() +
   scale_y_continuous(limits = c(0,1)) +
   geom_vline(xintercept = 0) +
@@ -435,6 +435,103 @@ plot <- ggplot(data, aes(ECI, v2x_egaldem, colour = continente_largo)) +
 # Noten que pueden editar duración del gif, su tamaño, entre otros parámetros
 animate(plot,  duration = 30, width = 900)
 anim_save("eci_vs_edi.gif")
+
+
+# hagamos otro gif ploteando la relación entre contribuciones sociales
+# y niveles de desigualdad, esta vez aplicando imputación de datos por
+# interpolación lineal, con la librería imputeTS
+library(imputeTS); library(readxl)
+
+# partamos limpiando los datos, importamos solo con las columnas que queremos
+gini_world <- read_xls("gini_world.xls") %>%
+  select(c(2, 5:64))
+
+# pivoteamos la tabla para que las columnas pasen a filas
+gini_world <- gini_world %>% gather("ano", "gini", 2:ncol(gini_world))
+
+# hacemos lo mismo con el dataset de contribuciones sociales
+contribuciones <- read_xls("contribuciones sociales.xls") 
+contribuciones <- contribuciones %>% select(2, 4:63) 
+contribuciones <- contribuciones %>% gather("ano", "contrib", 2:ncol(contribuciones))
+
+# escribimos una función para automatizar la interpolación lineal
+interpolation <- function(data, variable){
+  
+  #' @param data el df cuyos datos imputaremos
+  #' @param variable el nombre de la variable que queremos imputar
+  
+  # creamos un vector con los países
+  paises <- unique(contribuciones[["Country Code"]])
+  
+  for (i in paises) {
+    # la función na_interpolate requiere como mínimo 2 valores no nulos
+    # imputamos pobreza
+    if(sum(!is.na(data[[variable]][data$`Country Code`==i]))>2){
+      data[[variable]][data$`Country Code`==i] <- data[[variable]][data$`Country Code`==i] %>%
+        na_interpolation() # esta linea interpola los datos
+    } else{
+      # si el país tiene muy pocos datos, lo sacamos del df
+      data <- data[!data$`Country Code`==i,]
+    }
+  }
+  return(data)
+} # fin función interpolation()
+
+# generamos la imputación
+gini_world2 <- interpolation(gini_world, "gini")
+contribuciones2 <- interpolation(contribuciones, "contrib")
+
+# vamos a plotear si más desigualdad implica mayor distribución
+# y vamos a mirar los niveles de democracia igualitaria, todo en uno
+# pero antes crearemos sus respectivas llaves
+
+gini_world2$llave <- paste0(gini_world2$ano, gini_world2$`Country Code`)
+contribuciones2$llave <- paste0(contribuciones2$ano, contribuciones2$`Country Code`)
+
+# juntamos todo
+full_data <- data %>%
+  inner_join(select(gini_world2, gini, llave), by = "llave") %>%
+  inner_join(select(contribuciones2, contrib, llave), by= "llave")
+
+# sacaremos a mozambique porque le falta muchos datos
+full_data <- full_data %>% filter(!country_text_id=="MOZ")
+
+
+# y estamos listos pa plotear
+plot2 <- ggplot(full_data, aes(gini, contrib, colour = continente_largo)) +
+  geom_text(aes(label = country_text_id, size= v2x_egaldem)) +
+  theme_classic() +
+  scale_y_continuous(limits = c(0,100)) +
+  scale_x_continuous(limits = c(0,100)) +
+  facet_wrap(.~continente_largo, ncol = 3, nrow = 2) +
+  theme(legend.position = "none",
+        axis.title.x = element_text(size = 20, face = "bold"),
+        axis.title.y = element_text(size = 18, face = "bold", angle = 90),
+        strip.text = element_text(size = 20),
+        title = element_text(face = "bold", size = 30),
+        plot.title = element_text(hjust = 0.5, vjust = -15),
+        plot.subtitle = element_text(hjust = 0.5)) +
+  labs(x = "Gini",
+       y="Contribución social (% recaudación)", 
+       colour = "Continente",
+       subtitle = "(Tamaño indica nivel de democracia)",
+       title = "{frame_time}") +
+  transition_time(as.integer(year))
+  
+animate(plot2,  duration = 30, width = 900)
+anim_save("gini_vs_contrib.gif")
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
