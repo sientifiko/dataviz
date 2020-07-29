@@ -294,69 +294,137 @@ ggplot(gini_data, aes(anno, gini)) +
 
 library(XML);library(RCurl)
 library(tm)
-library(wordcloud)
+library(wordcloud2)
+library(stm)
 
 texto <-  "texto_ejemplo_manifiestocomunista.txt" # poner aca el path o url del texto, debe ser un txt
 
 txt <- readLines(texto ,encoding="UTF-8")
-txt = iconv(txt, to="ASCII//TRANSLIT")
+txt <- iconv(txt, to="ASCII//TRANSLIT")
 
-# construye un corpus
-corpus <- Corpus(VectorSource(txt))
+# creo una función que produce una nube de palabras con wordcloud2,
+# quedan mucho más bonitas que con wordcloud solo
+nube <- function(data) {
+  #'@param data un vector de texto 
+  #'@return una nube de palabras
+  
+  # construye un corpus
+  corpus <- Corpus(VectorSource(data))
+  
+  # lleva a min?sculas
+  d  <- tm_map(corpus, tolower)
+  
+  # quita espacios en blanco
+  d  <- tm_map(d, stripWhitespace)
+  
+  # remueve la puntuaci?n
+  d <- tm_map(d, removePunctuation)
+  
+  # remove numbers
+  d <- tm_map(d, removeNumbers)
+  
+  # remove certain words
+  vector <- c("ano", "columna", "anos", "refiere", "via","torno","nota",
+              "forma","formas","area", "sino", "mas") # palabras a remover
+  d <- tm_map(d, removeWords, vector)
+  
+  # carga mi archivo de palabras vac?as personalizada y lo convierte a ASCII
+  sw <- readLines("http://www.webmining.cl/wp-content/uploads/2011/03/stopwords.es.txt", encoding="UTF-8")
+  sw <- iconv(sw, to="ASCII//TRANSLIT")
+  
+  # remueve palabras vac?as genericas
+  d <- tm_map(d, removeWords, stopwords("spanish"))
+  
+  # remueve palabras vac?as personalizadas
+  d <- tm_map(d, removeWords, sw)
+  
+  # crea matriz de terminos
+  tdm <- TermDocumentMatrix(d)
+  m <- as.matrix(tdm)
+  v <- sort(rowSums(m),decreasing=TRUE)
+  df <- data.frame(word = names(v),freq=v)
+  
+  set.seed(1234)
+  # wordcloud(df$word, df$freq, min.freq= 1,
+  #           #  max.words = x, 
+  #           random.order = F,
+  #           rot.per = 0.2,
+  #           #    fixed.asp = T ,
+  #           #   use.r.layout = T,
+  #           colors = brewer.pal(8, "Dark2"))
+  
+  wordcloud2(data=df, size=1.6, color='random-dark')
+} # fin de nube()
 
-# lleva a minisculas
-d  <- tm_map(corpus, tolower)
+# creo una función para modelar los tópicos de un texto
+topicModeler <- function(data, k=10, n=3, title= ""){
+  #'@param data un vector de texto 
+  #'@param k la cantidad de tópicos esperados
+  #'@param n la cantidad de palabras que se espera graficar por tópico
+  #'@return una gráfica de tópicos
+  
+  # convierto el vector de texto en un formato de procesamiento e indico el idioma
+  texto <- textProcessor(data, language = "spanish")
+  
+  # preparo el documento extrayendo los respectivos valores del objeto creado
+  out <- prepDocuments(texto$documents, texto$vocab, texto$meta)
+  
+  # genero el modelo de tópicos
+  modelo <- stm(out$documents, vocab = out$vocab, K= k,
+                max.em.its = 75, data = out$meta,
+                init.type = "Spectral", verbose = FALSE)
+  
+  # grafico el modelo
+  plot(modelo, xlab = "Proporción esperada de tópicos", 
+       xlim = c(0,1), n=n, main= title)
+} # fin de topicModeler()
 
-# quita espacios en blanco
-d  <- tm_map(d, stripWhitespace)
+# graficar nube del manifiesto
+nube(txt)
 
-# remueve la puntuaci?n
-d <- tm_map(d, removePunctuation)
-
-# remove numbers
-d <- tm_map(d, removeNumbers)
-
-# remove certain words
-vector <- c("ano", "columna", "anos", "refiere", "via","torno","nota",
-            "forma","formas","area", "mas", "vez") # palabras a remover de manera personalizada
-d <- tm_map(d, removeWords, vector)
+# graficar topicos del manifiesto
+topicModeler(txt, n=5, title= "Topicos del Manifiesto Comunista")
 
 
-# carga mi archivo de palabras vacias personalizada y lo convierte a ASCII
-sw <- readLines("http://www.webmining.cl/wp-content/uploads/2011/03/stopwords.es.txt", encoding="UTF-8")
-sw = iconv(sw, to="ASCII//TRANSLIT")
+# ============== GRAFICAR UNA ENCUESTA DE ESCALA LIKERT ============
 
-# remueve palabras vacias genericas
-d <- tm_map(d, removeWords, stopwords("spanish"))
+library(readxl)
 
-# remueve palabras vac?as personalizadas
-d <- tm_map(d, removeWords, sw)
+# importar datos de ejemplo
+likert <- read_xlsx("escala likert.xlsx") 
 
-# crea matriz de terminos
-tdm <- TermDocumentMatrix(d)
+# pivoteando la tabla de escalas likert
+likert2 <- likert %>% gather("items", "escala") %>% 
+  group_by(items, escala) %>%
+  summarize(n=n()) %>%
+  mutate(p=n/sum(n))
 
-# la convierte en objeto matriz
-m <- as.matrix(tdm)
+# ordenaremis los factores de Muy en desacuerdo a muy de acuerdo
+# hay varias formas de hacerlo, esta es la que más me gusta, porque
+# sirve para cualquier tipo de escala que se quiera
+# Antes paso la columna creada a factor, a veces no está en factor, ojo
+likert2$escala <- as.factor(likert2$escala)
 
-# la ordena por frecuencia
-v <- sort(rowSums(m),decreasing=TRUE)
+# básicamente lo que hago es a la función levels() darle el orden según
+# los factores identificados
+likert2$escala <- factor(likert2$escala, 
+                        levels(likert2$escala)[c(4,2,5,1,3)])
 
-# la convierte a data frame
-df <- data.frame(word = names(v),freq=v)
 
-# par(mfrow = c(2,2)) -- > esta es otra forma de ajustar resolucion
-# correr este comando para ajustar la resolucion
-# a la hora de plotear si queda feo
-# par(mar = rep(1,1))
+# finalmente graficamos
+ggplot(likert2, aes(escala, 
+                   str_wrap(items, 30), 
+                   fill= as.numeric(escala))) +
+  theme_classic() +
+  geom_tile(colour = "grey50") +
+  scale_fill_gradient(low = "red", high = "green") +
+  geom_text(aes(label=scales::percent(round(p,2)))) +
+  scale_x_discrete(position = "top") +
+  theme(axis.text.x = element_text(angle = 90),
+        axis.text.y = element_text(size=8),
+        legend.position = "none") +
+  labs(x="", y="")
 
-set.seed(1234) # para replicabilidad de la gráfica
-wordcloud(df$word, df$freq, min.freq= 5,
-          #  max.words = x, 
-          random.order = F,
-          rot.per = 0.2,
-          #    fixed.asp = T ,
-          #   use.r.layout = T,
-          colors = brewer.pal(8, "Dark2"))
 
 
 # ==================== HAGAMOS GIFS!!!! ===============================
