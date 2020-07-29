@@ -419,7 +419,8 @@ likert2$escala <- factor(likert2$escala,
 
 # finalmente graficamos
 ggplot(likert2, aes(escala, 
-                   str_wrap(items, 30), 
+                   str_wrap(items, 30), # la función str_wrap permite que los textos largos se
+                                        # acorten como se ven en la gráfica
                    fill= as.numeric(escala))) +
   theme_classic() +
   geom_tile(colour = "grey50") +
