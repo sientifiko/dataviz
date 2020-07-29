@@ -303,7 +303,11 @@ txt <- readLines(texto ,encoding="UTF-8")
 txt <- iconv(txt, to="ASCII//TRANSLIT")
 
 # creo una función que produce una nube de palabras con wordcloud2,
-# quedan mucho más bonitas que con wordcloud solo
+# quedan mucho más bonitas que con wordcloud solo.
+# dentro de esta función dejo también la wordcloud tradicional.
+# OJO: notar que la función wordcloud2 es MUY personalizable, ver acá
+# algunos ejemplos: 
+# https://cran.r-project.org/web/packages/wordcloud2/vignettes/wordcloud.html
 nube <- function(data) {
   #'@param data un vector de texto 
   #'@return una nube de palabras
@@ -353,7 +357,9 @@ nube <- function(data) {
   #           #   use.r.layout = T,
   #           colors = brewer.pal(8, "Dark2"))
   
-  wordcloud2(data=df, size=1.6, color='random-dark')
+  wordcloud2(data=df, size=1.6, 
+             color='random-dark', 
+             shape = "square") 
 } # fin de nube()
 
 # creo una función para modelar los tópicos de un texto
