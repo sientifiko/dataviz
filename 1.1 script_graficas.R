@@ -665,7 +665,34 @@ animate(plot2,  duration = 30, width = 900)
 anim_save("gini_vs_contrib.gif")
 
 
+# gif sobre evolución ideológica de candidatos a presidentes en
+# primera y segunda vuelta
 
+data <- read_xls("ideologias presidentes.xls")
+
+data2 <- data %>%
+  filter(tipo != "Primarias")
+
+g <- ggplot(data2, aes(economico, social, color= as.factor(coalicion))) +
+  theme_classic() +
+  geom_text(aes(label= candidato), size = 10) +
+  theme(legend.position = "none",
+        axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 20),
+        axis.title.x = element_text(size = 30),
+        axis.title.y = element_text(size = 30), 
+        title = element_text(size = 30)) +
+  scale_x_continuous(limits = c(1, 10)) +
+  scale_y_continuous(limits = c(1, 10)) +
+  geom_vline(xintercept = 5) +
+  geom_hline(yintercept = 5) +
+  labs(x= "Económico (derecha ==>)", 
+       y= "Social (autoritario ==>)",
+       title = "{frame_time}",
+       subtitle = "Postura de candidatos primera y segunda vuelta") +
+  transition_time(as.integer(año))
+
+animate(g,  duration = 60, width = 900)
 
 
 
