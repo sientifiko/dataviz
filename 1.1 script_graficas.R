@@ -681,7 +681,9 @@ g <- ggplot(data2, aes(economico, social, color= as.factor(coalicion))) +
         axis.text.y = element_text(size = 20),
         axis.title.x = element_text(size = 30),
         axis.title.y = element_text(size = 30), 
-        title = element_text(size = 30)) +
+        plot.title = element_text(size = 30),
+        plot.subtitle = element_text(size = 20),
+        plot.caption = element_text(size = 11) ) +
   scale_x_continuous(limits = c(1, 10)) +
   scale_y_continuous(limits = c(1, 10)) +
   geom_vline(xintercept = 5) +
@@ -689,15 +691,12 @@ g <- ggplot(data2, aes(economico, social, color= as.factor(coalicion))) +
   labs(x= "Económico (derecha ==>)", 
        y= "Social (autoritario ==>)",
        title = "{frame_time}",
-       subtitle = "Postura de candidatos primera y segunda vuelta") +
+       subtitle = "Postura de candidatos primera y segunda vuelta",
+       caption = "Elaboración propia con base a datos de tresquintos.cl") +
   transition_time(as.integer(año))
+  
 
 animate(g,  duration = 60, width = 900)
-
-
-
-
-
 
 
 
